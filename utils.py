@@ -1,174 +1,128 @@
 import numpy as np
-from sklearn.preprocessing import MinMaxScaler
+from keras.datasets import mnist
+from keras.utils import to_categorical
 import cv2
 import os
-import math
-import dict2xml
-from dicttoxml import dicttoxml
-import zlib
-from xml_to_dict import XMLtoDict
-import ast
 
-class GetData(object):
-	def __init__(self):
-		self.wordArray= []
-		self.walk_dir = "../../../lip_reading/data"
-		self.datasets = ["train", "test","val"]
-		self.frame_dict =  {"Distance":{},"Angle":{}}
-		self.parser = XMLtoDict()
-		self.class_count = 3
-		self.x_train = np.zeros(shape=(1000*self.class_count ,29,38))
-		self.y_train = np.zeros(shape=(1000*self.class_count ))
-		self.x_test = np.zeros(shape=(50*self.class_count ,29,38))
-		self.y_test = np.zeros(shape=(50*self.class_count ))
-		self.x_val= np.zeros(shape=(50*self.class_count ,29,38))
-		self.y_val = np.zeros(shape=(50*self.class_count ))
-		
-	def sortedWalk(self, top, topdown=True, onerror=None):
-		from os.path import join, isdir, islink
+walk_dir = "../../lip_reading/data"
+wordArray = ['ABOUT','ABUSE']
+datasets = ['train','test','val']
 
-		names = os.listdir(top)
-		names.sort()
-		dirs, nondirs = [], []
+def sortedWalk(top, topdown=True, onerror=None):
+	from os.path import join, isdir, islink
 
-		for name in names:
-			if isdir(os.path.join(top, name)):
-				dirs.append(name)
-			else:
-				nondirs.append(name)
+	names = os.listdir(top)
+	names.sort()
+	dirs, nondirs = [], []
 
-		if topdown:
-			yield top, dirs, nondirs
-		for name in dirs:
-			path = join(top, name)
-			if not os.path.islink(path):
-				for x in self.sortedWalk(path, topdown, onerror):
-					yield x
-		if not topdown:
-			yield top, dirs, nondirs
+	for name in names:
+		if isdir(os.path.join(top, name)):
+			dirs.append(name)
+		else:
+			nondirs.append(name)
 
-	def getFolderNamesInRootDir(self):
-		
+	if topdown:
+		yield top, dirs, nondirs
+	for name in dirs:
+		path = join(top, name)
+		if not os.path.islink(path):
+			for x in sortedWalk(path, topdown, onerror):
+				yield x
+	if not topdown:
+		yield top, dirs, nondirs
 
-		print('walk_dir = ' + self.walk_dir)
+def data_generator():
+	val = np.zeros(shape=(48 ,48))
+	k_train = 0
+	k_test = 0
+	k_val = 0
+	'''
+	x_train = np.zeros(shape=(2000 ,29))
+	y_train= np.zeros(shape=(2000 ,1))
+	x_test= np.zeros(shape=(50 ,29))
+	y_test = np.zeros(shape=(50 ,29))
+	x_val = np.zeros(shape=(50 ,29))
+	y_val = np.zeros(shape=(50 ,29))
+	'''
+	x_train =np.zeros((2000, 29,48,48))
+	
+	y_train=np.zeros((2000, 1))
+	x_test= np.zeros((100, 29,48,48))
+	y_test = np.zeros((100, 1))
+	x_val =np.zeros((100, 29,48,48))
+	y_val = np.zeros((100, 1))
+	print('walk_dir = ' + walk_dir)
+	temp = np.zeros((29,48,48))
+	for item in wordArray:
 
-		# If your current working directory may change during script execution, it's recommended to
-		# immediately convert program arguments to an absolute path. Then the variable root below will
-		# be an absolute path as well. Example:
-		# walk_dir = os.path.abspath(walk_dir)
-		print('walk_dir (absolute) = ' + os.path.abspath(self.walk_dir))
+		#index = 1
+		for subitem in datasets :
+			sourceDir = walk_dir +"/" +item + "/" +subitem
+			targetDir = "data" +"/" +item + "/" +subitem
+			index = 1
+			for root, subdirs, files in sortedWalk(os.path.abspath(sourceDir)):
+					
+					for file in files:
+						if file.endswith(".jpg"):
+							
+							filepath = os.path.join(root, file)
+							print("processing : ", filepath)
 
-		for root, subdirs, files in self.sortedWalk(self.walk_dir):
-			print('--\nroot = ' + root)
-			for subdir in sorted(subdirs):
-				print('\t- subdirectory ' + subdir)
-				self.wordArray.append(subdir)
-			break
+							img = cv2.imread(filepath,cv2.IMREAD_GRAYSCALE)
 
-	def processCompressedFiles(self):
-		
-		val = np.zeros(shape=(29 ,38))
-		k_train = 0
-		k_test = 0
-		k_val = 0
-		print('walk_dir = ' + self.walk_dir)
-		for item in self.wordArray:
-			if item == 'ACCESS':
-				return
-
-			for subitem in self.datasets :
-				sourceDir = self.walk_dir +"/" +item + "/" +subitem
-				self.targetDir = "data" +"/" +item + "/" +subitem
-				for root, subdirs, files in self.sortedWalk(os.path.abspath(sourceDir)):
-						
-						for file in files:
-							if file.endswith(".hgk"):
-								filepath = os.path.join(root, file)
-								print("processing : ", filepath)
-								str_object = zlib.decompress(open(filepath, 'rb').read())
-
-								my_dict = self.parser.parse(str_object)
-								i = 0
-								for keys in my_dict['test'].keys():
-									
-									if len(my_dict['test'][keys]['Distance'].values()) != 19 :
-										print(keys)
-										print(len(my_dict['test'][keys]['Distance'].values()))
-										print(len(my_dict['test'][keys]['Angle'].values()))
-									temp = np.zeros(shape=(29 ,2 ,19))
-									temp[i][0] = np.array(list(map(float, my_dict['test'][keys]['Distance'].values())))
-									temp[i][1]= np.array(list(map(float, my_dict['test'][keys]['Angle'].values())))
-									val[i] = np.ndarray.flatten(temp[i],'F')
-									i = i+1
+							if index == int(file[6:-10]):
+								temp[int(file[12:-4])]= img
+							else:
+								
 								if subitem == 'test':
 									#self.x_test[k]= np.ndarray.flatten(val)
-									self.x_test[k_test]= val
-									self.y_test[k_test]= self.wordArray.index(item)+1
+									x_test[index-1]= temp
+									y_test[index-1]= wordArray.index(item)
 									k_test= k_test+1
 								elif subitem == 'train':
 									#self.x_train[k]= np.ndarray.flatten(val)
-									self.x_train[k_train]= val
-									self.y_train[k_train]= self.wordArray.index(item)+1
+									x_train[index-1]= temp
+									y_train[index-1]= wordArray.index(item)
 									k_train = k_train+1	
 								elif subitem == 'val':
 									#self.x_val[k]= np.ndarray.flatten(val)
-									self.x_val[k_val]= val
-									self.y_val[k_val]= self.wordArray.index(item)+1
+									x_val[index-1]= temp
+									y_val[index-1]= wordArray.index(item)
 									k_val = k_val+1
-												
-								temp = []
+								temp = np.zeros((29,48,48))
+								temp[int(file[12:-4])]= img
 
+							index = int(file[6:-10])
+							index2 = int(file[12:-4])
 
+			
+	# input image dimensions
+	img_rows, img_cols = 48, 48
+	#(x_train, y_train), (x_test, y_test) = mnist.load_data()
+	#x_train = np.array(x_train)
+	#x_test = np.array(x_test)
+	x_train = x_train.reshape(-1,29*img_rows * img_cols, 1)
+	x_test = x_test.reshape(-1,29*img_rows * img_cols, 1)
 
+	num_classes = 2
+	y_train = to_categorical(y_train, num_classes)
+	y_test = to_categorical(y_test, num_classes)
 
-def get_xy_kfolds( word_count=[1], timesteps=1000):
-	gd = GetData()
-	gd.getFolderNamesInRootDir()
-	gd.processCompressedFiles()
-	"""
-	load exchange rate dataset and preprecess it, then split it into k-folds for CV
-	:param split_index: list, the ratio of whole dataset as train set
-	:param timesteps: length of a single train x sample
-	:return: list, [train_x_set,train_y_set,test_x_single,test_y_single]
-	"""
-	'''
-	df = np.loadtxt('exchange_rate.txt', delimiter=',')
-	n = len(df)
-	'''
-	folds = []
-	enc = MinMaxScaler()
-	#self.x_train = enc.fit_transform(self.x_train)
-	
-	#df = enc.fit_transform(df)
-	'''
-	for split_point in word_count:
-		train_end = int(split_point * n)
-		train_x, train_y = [], []
-		for i in range(train_end - timesteps):
-			print(i)
-			train_x.append(df[i:i + timesteps])
-			train_y.append(df[i + timesteps])
-		print(len(train_x))
-		print(len(train_y))
-		train_x = np.array(train_x)
-		train_y = np.array(train_y)
-		test_x = df[train_end - timesteps + 1:train_end + 1]
-		test_y = df[train_end + 1]
-		print(len(test_x))
-		print(len(test_y))
-		folds.append((train_x, train_y, test_x, test_y))
-	'''
-	np.save('x_train', gd.x_train)
-	np.save('y_train', np.array(gd.y_train))
-	np.save('x_val', gd.x_val)
-	np.save('y_val', np.array(gd.y_val))
-	np.save('x_test', gd.x_test)
-	np.save('y_test', np.array(gd.y_test))
-	folds.append((np.array(gd.x_train), np.array(gd.y_train), np.array(gd.x_test), np.array(gd.y_test)))
-	return folds, enc
+	y_train = np.expand_dims(y_train, axis=2)
+	y_test = np.expand_dims(y_test, axis=2)
+
+	x_train = x_train.astype('float32')
+	x_test = x_test.astype('float32')
+	x_train /= 255
+	x_test /= 255
+	np.save('x_train',x_train)
+	np.save('y_train', y_train)
+	np.save('x_val', x_val)
+	np.save('y_val', y_val)
+	np.save('x_test', x_test)
+	np.save('y_test', y_test)
+	return (x_train, y_train), (x_test, y_test)
 
 
 if __name__ == '__main__':
-	
-
-	get_xy_kfolds()
+	print(data_generator())
