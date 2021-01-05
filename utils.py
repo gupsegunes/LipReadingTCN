@@ -5,8 +5,24 @@ import cv2
 import os
 
 walk_dir = "../../lip_reading/data"
-wordArray = ['ABOUT','ABUSE']
+wordArray = []
 datasets = ['train','test','val']
+wordCount = 10
+def getFolderNamesInRootDir():
+	print('walk_dir = ' + walk_dir)
+
+	# If your current working directory may change during script execution, it's recommended to
+	# immediately convert program arguments to an absolute path. Then the variable root below will
+	# be an absolute path as well. Example:
+	# walk_dir = os.path.abspath(walk_dir)
+	print('walk_dir (absolute) = ' + os.path.abspath(walk_dir))
+
+	for root, subdirs, files in sortedWalk(walk_dir):
+		print('--\nroot = ' + root)
+		for subdir in sorted(subdirs):
+			print('\t- subdirectory ' + subdir)
+			wordArray.append(subdir)
+		break
 
 def sortedWalk(top, topdown=True, onerror=None):
 	from os.path import join, isdir, islink
@@ -32,6 +48,7 @@ def sortedWalk(top, topdown=True, onerror=None):
 		yield top, dirs, nondirs
 
 def data_generator():
+	getFolderNamesInRootDir()
 	val = np.zeros(shape=(48 ,48))
 	k_train = 0
 	k_test = 0
@@ -44,17 +61,20 @@ def data_generator():
 	x_val = np.zeros(shape=(50 ,29))
 	y_val = np.zeros(shape=(50 ,29))
 	'''
-	x_train =np.zeros((2000, 29,48,48))
+	x_train =np.zeros((wordCount*1000, 29,48,48))
 	
-	y_train=np.zeros((2000, 1))
-	x_test= np.zeros((100, 29,48,48))
-	y_test = np.zeros((100, 1))
-	x_val =np.zeros((100, 29,48,48))
-	y_val = np.zeros((100, 1))
+	y_train=np.zeros((wordCount*1000, 1))
+	x_test= np.zeros((wordCount*10, 29,48,48))
+	y_test = np.zeros((wordCount*10, 1))
+	x_val =np.zeros((wordCount*10, 29,48,48))
+	y_val = np.zeros((wordCount*10, 1))
 	print('walk_dir = ' + walk_dir)
 	temp = np.zeros((29,48,48))
+	i = 0
 	for item in wordArray:
-
+		if i ==  wordCount -1 :
+			break
+		i = i+1
 		#index = 1
 		for subitem in datasets :
 			sourceDir = walk_dir +"/" +item + "/" +subitem
@@ -104,9 +124,9 @@ def data_generator():
 	x_train = x_train.reshape(-1,29*img_rows * img_cols, 1)
 	x_test = x_test.reshape(-1,29*img_rows * img_cols, 1)
 
-	num_classes = 2
-	y_train = to_categorical(y_train, num_classes)
-	y_test = to_categorical(y_test, num_classes)
+
+	y_train = to_categorical(y_train, wordCount)
+	y_test = to_categorical(y_test, wordCount)
 
 	y_train = np.expand_dims(y_train, axis=2)
 	y_test = np.expand_dims(y_test, axis=2)
