@@ -4,10 +4,10 @@ from keras.utils import to_categorical
 import cv2
 import os
 
-walk_dir = "../../lip_reading/data"
+walk_dir = "../lip_reading/data"
 wordArray = []
 datasets = ['train','test','val']
-wordCount = 2
+wordCount = 5
 def getFolderNamesInRootDir():
 	print('walk_dir = ' + walk_dir)
 
@@ -61,18 +61,23 @@ def data_generator():
 	x_val = np.zeros(shape=(50 ,29))
 	y_val = np.zeros(shape=(50 ,29))
 	'''
-	x_train =np.zeros((wordCount*1000, 29,48,48))
-	
-	y_train=np.zeros((wordCount*1000, 1))
-	x_test= np.zeros((wordCount*50, 29,48,48))
-	y_test = np.zeros((wordCount*50, 1))
-	x_val =np.zeros((wordCount*50, 29,48,48))
-	y_val = np.zeros((wordCount*50, 1))
+	#	x_train =np.zeros((wordCount*1000, 29,48,48))
+	x_train =[] 
+	#	y_train=np.zeros((wordCount*1000, 1))
+	y_train=[]
+	#	x_test= np.zeros((wordCount*50, 29,48,48))
+	x_test =[] 
+	#	y_test = np.zeros((wordCount*50, 1))
+	y_test=[]
+	#	x_val =np.zeros((wordCount*50, 29,48,48))
+	x_val =[] 
+	#	y_val = np.zeros((wordCount*50, 1))
+	y_val=[]
 	print('walk_dir = ' + walk_dir)
 	temp = np.zeros((29,48,48))
 	i = 0
 	for item in wordArray:
-		if i ==  wordCount -1 :
+		if i ==  wordCount :
 			break
 		i = i+1
 		#index = 1
@@ -96,18 +101,21 @@ def data_generator():
 								
 								if subitem == 'test':
 									#self.x_test[k]= np.ndarray.flatten(val)
-									x_test[index-1]= temp
-									y_test[index-1]= wordArray.index(item)
+									x_test.append(temp)
+									#y_test[k_test]= wordArray.index(item)
+									y_test.append(item)
 									k_test= k_test+1
 								elif subitem == 'train':
 									#self.x_train[k]= np.ndarray.flatten(val)
-									x_train[index-1]= temp
-									y_train[index-1]= wordArray.index(item)
+									x_train.append(temp)
+									#	y_train[k_train]= wordArray.index(item)
+									y_train.append(item)
 									k_train = k_train+1	
 								elif subitem == 'val':
 									#self.x_val[k]= np.ndarray.flatten(val)
-									x_val[index-1]= temp
-									y_val[index-1]= wordArray.index(item)
+									x_val.append(temp)
+									#	y_val[k_val]= wordArray.index(item)
+									y_val.append(item)
 									k_val = k_val+1
 								temp = np.zeros((29,48,48))
 								temp[int(file[12:-4])]= img
@@ -121,16 +129,18 @@ def data_generator():
 	#(x_train, y_train), (x_test, y_test) = mnist.load_data()
 	#x_train = np.array(x_train)
 	#x_test = np.array(x_test)
-	x_train = x_train.reshape(-1,29*img_rows * img_cols, 1)
-	x_test = x_test.reshape(-1,29*img_rows * img_cols, 1)
-
+	x_train = np.array(x_train).reshape(-1,29*img_rows * img_cols, 1)
+	x_test = np.array(x_test).reshape(-1,29*img_rows * img_cols, 1)
+	x_val = np.array(x_val).reshape(-1,29*img_rows * img_cols, 1)
 
 
 
 	x_train = x_train.astype('float32')
 	x_test = x_test.astype('float32')
+	x_val = x_val.astype('float32')
 	x_train /= 255
 	x_test /= 255
+	x_val /= 255
 	np.save('x_train',x_train)
 	np.save('y_train', y_train)
 	np.save('x_val', x_val)
