@@ -203,7 +203,7 @@ def run_task():
 							dilations=[2 ** i for i in range(9)],
 							nb_stacks=1,
 							max_len=x_train[0:1].shape[1],
-							use_skip_connections=True)
+							use_skip_connections=False)
 
 	print(f'x_train.shape = {x_train.shape}')
 	print(f'y_train.shape = {y_train_one_hot_label.shape}')
@@ -221,7 +221,7 @@ def run_task():
 	y_train_one_hot_label = y_train_one_hot_label.squeeze().argmax(axis=1)
 	y_test_one_hot_label = y_test_one_hot_label.squeeze().argmax(axis=1)
 	y_val_one_hot_label = y_val_one_hot_label.squeeze().argmax(axis=1)
-	history = model.fit(x_train, y_train_one_hot_label, epochs=100,
+	history = model.fit(x_train, y_train_one_hot_label, epochs=50,
 				validation_data=(x_test, y_test_one_hot_label),callbacks=[tensorboard_callback])
 
 	create_save_plots(history,model,x_train, y_train, x_test,y_test, x_val,y_val,y_train_one_hot_label,y_test_one_hot_label,y_val_one_hot_label)

@@ -6,6 +6,7 @@ import os
 
 walk_dir = "../lip_reading/data"
 wordArray = []
+words =['ABOUT','BILLION','COMPANIES','FUTURE','OPPOSITION']
 datasets = ['train','test','val']
 wordCount = 5
 def getFolderNamesInRootDir():
@@ -77,8 +78,16 @@ def data_generator():
 	temp = np.zeros((29,48,48))
 	i = 0
 	for item in wordArray:
+		'''
 		if i ==  wordCount :
 			break
+		i = i+1
+		'''
+		if i >= 5:
+			break
+		if item != words[i]:
+			continue
+
 		i = i+1
 		#index = 1
 		for subitem in datasets :
